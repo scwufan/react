@@ -1,0 +1,229 @@
+<template>
+  <div class="all">
+    <div class="all_box">
+      <el-card class="box-card">
+        <div class="top">
+          <div><el-button type="primary"  @click="dialogFormVisible = true">添加角色</el-button></div>
+          <el-dialog title="添加角色" :visible.sync="dialogFormVisible">
+            <el-form
+              :model="form"
+              :rules="rules"
+              ref="form">
+              <el-form-item label="角色名" prop="roleName" :label-width="formLabelWidth">
+                <el-input style="width:400px" v-model="form.roleName" autocomplete="off"></el-input>
+              </el-form-item>
+              <el-form-item label="角色描述" :label-width="formLabelWidth">
+                <el-input style="width:400px" v-model="form.describe" autocomplete="off"></el-input>
+              </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click="dialogFormVisible = false">取 消</el-button>
+              <el-button type="primary" @click="addRole">确 定</el-button>
+            </div>
+          </el-dialog>
+        </div>
+        <div class="box">
+          <el-card class="box-card">
+            <el-table :data="roles" style="width: 100%">
+              <el-table-column type="expand" prop="children">  
+                <template slot-scope="scope">
+                  <el-tag closable>标签一</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="#"> 
+                <template slot-scope="scope">
+                  <span>{{ scope.$index+1 }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="roleName" label="职位"> </el-table-column>
+              <el-table-column prop="roleDesc" label="描述"> </el-table-column>
+              <el-table-column label="操作"  width="240" class="does">
+                <template slot-scope="scope">
+                  <el-button
+                    size="mini"
+                    type="primary"
+                    @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                  <el-button
+                    size="mini"
+                    type="danger"
+                    @click="handleDelete(scope.$index, scope.row)"
+                    >删除</el-button>
+                  <el-button
+                    size="mini"
+                    type="warning"
+                    @click="dialogFormVisible2 = true">分配</el-button>
+                    <el-dialog title="分配用户" :visible.sync="dialogFormVisible2">
+                      <el-form v-model="form">
+                        <el-form-item label="用户名" :label-width="formLabelWidth" disabled>
+                          <el-input v-model="form.username" auto-complete="off" disabled></el-input>
+                        </el-form-item>
+                        <el-form-item label="邮箱" :label-width="formLabelWidth">
+                          <el-input v-model="form.email" auto-complete="off"  disabled></el-input>
+                        </el-form-item>
+                        <el-form-item label="角色ID" :label-width="formLabelWidth">
+                          <el-input v-model="form5" auto-complete="off"></el-input>
+                        </el-form-item>
+                      </el-form>
+                      <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible2 = false">取 消</el-button>
+                        <!-- 设置触发更新的方法 -->
+                        <el-button type="primary" @click="handleDistribution(scope.$index, scope.row)">确 定</el-button>
+                      </div>
+                    </el-dialog>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </div>
+        <el-dialog title="编辑用户" :visible.sync="dialogFormVisible1">
+            <el-form
+              :model="form"
+              :rules="rules"
+              ref="form">
+              <el-form-item label="角色名" prop="roleName" :label-width="formLabelWidth">
+                <el-input
+                style="width:400px"
+                v-model="form.roleName"
+                autocomplete="off"
+                ></el-input>
+              </el-form-item>
+              <el-form-item label="角色描述" :label-width="formLabelWidth">
+                <el-input style="width:400px" v-model="form.describe" autocomplete="off"></el-input>
+              </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible1 = false">取 消</el-button>
+            <el-button type="primary" @click="update">确 定</el-button>
+            </div>
+        </el-dialog>
+      </el-card>
+    </div>
+  </div>
+</template>
+
+<script>
+import { createNamespacedHelpers } from "vuex";
+let roleModule = createNamespacedHelpers("role");
+let { mapState: roleState, mapActions: roleActions } = roleModule;
+export default {
+  name: "",
+  props: {},
+  components: {},
+  data() {
+    return {
+      value: "",
+      dialogFormVisible: false,
+      dialogFormVisible1: false,
+      dialogFormVisible2: false,
+      form: {
+          roleName: "",
+          describe:"",
+      },
+      forms:{},
+      rules: {
+        roleName: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
+        ],
+      },
+      formLabelWidth: '100px',
+      form5: "",
+    };
+  },
+  methods: {
+    ...roleActions(["rolesList", "addRoles", "deleteRoles", "editRoles"]),
+    //增加用户
+    addRole() {
+      this.addRoles({
+        roleName: this.form.roleName,
+        roleDesc: this.form.describe,
+      });
+      this.rolesList();
+    },
+    // 删除单个用户
+    handleDelete(index, row) {
+      this.$confirm("永久删除该文件, 是否继续?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(() => {
+          // 移除对应索引位置的数据，可以对row进行设置向后台请求删除数据
+          this.deleteRoles(row.id);
+          this.rolesList();
+          this.$message({
+            type: "success",
+            message: "删除成功!",
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除",
+          });
+        });
+      console.log(index, row);
+    },
+    //编辑用户
+    handleEdit(index, row) {
+      // 将数据的index传递过来用于实现数据的回显
+      this.form = this.roles[index];
+      this.currentIndex = index;
+      // 设置对话框的可见
+      this.dialogFormVisible1 = true;
+      console.log(index, row);
+    },
+    update() {
+      this.editRoles({
+        id: this.form.id,
+        roleName: this.form.roleName,
+        roleDesc: this.form.describe,
+      });
+      this.dialogFormVisible1 = false;
+      this.rolesList();
+    },
+    //分配权限
+    /* handleDistribution(index, row){
+      this.distributionUser({
+        id: row.id,
+        rid: this.form5
+      })
+    }, */
+  },
+  mounted() {
+    this.rolesList();
+  },
+  watch: {},
+  computed: {
+    ...roleState(["roles"]),
+  },
+};
+</script>
+
+<style scoped lang="scss">
+.all {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 80px;
+}
+.all_box {
+  width: 95%;
+}
+.top {
+  display: flex;
+}
+.does{
+  width: 500px;
+  display: flex;
+  justify-content: space-between;
+}
+.box {
+  margin-top: 20px;
+}
+.box_top {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  border-bottom: 1px solid #dcdfe6;
+}
+</style>
